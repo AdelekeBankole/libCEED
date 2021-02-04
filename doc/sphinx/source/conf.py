@@ -22,7 +22,6 @@
 # sys.path.insert(0, os.path.abspath('.'))
 import glob
 import shutil
-import sphinx_rtd_theme
 import sys
 import breathe
 import os
@@ -41,10 +40,8 @@ from sphinxcontrib import katex
 extensions = [
     'breathe',
     'hoverxref.extension',
-    'recommonmark',
-    'sphinx_markdown_tables',
     'sphinx_panels',
-    'sphinx_rtd_theme',
+    'myst_parser',
     'sphinx.ext.autodoc',
     'sphinx.ext.coverage',
     'sphinx.ext.doctest',
@@ -65,14 +62,6 @@ numfig = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
-
-# The suffix(es) of source filenames.
-# You can specify multiple suffix as a list of string:
-#
-# source_suffix = ['.rst', '.md']
-source_suffix = {
-    '.rst': 'restructuredtext',
-    '.md': 'markdown'}
 
 # The master toctree document.
 master_doc = 'index'
@@ -122,12 +111,23 @@ bibtex_bibfiles = [
     'references.bib',
 ]
 
+myst_enable_extensions = [
+    'deflist',
+    'dollarmath',
+    'html_image',
+    'linkify',
+    'colon_fence',
+]
+
+myst_heading_anchors = 2
+myst_url_schemes = ("http", "https", "mailto")
+
 # -- Options for HTML output ----------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'sphinx_rtd_theme'
+html_theme = 'pydata_sphinx_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
