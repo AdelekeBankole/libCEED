@@ -296,15 +296,3 @@ def mkdir_p(path):
         os.makedirs(path)
     except FileExistsError:
         pass
-
-
-# Copy example documentation from source tree
-try:
-    shutil.rmtree('examples')
-except FileNotFoundError:
-    pass
-for filename in glob.glob(os.path.join(
-        rootdir, 'examples/**/*.rst'), recursive=True):
-    destdir = os.path.dirname(os.path.relpath(filename, rootdir))
-    mkdir_p(destdir)
-    shutil.copy2(filename, destdir)
