@@ -65,6 +65,7 @@ PetscErrorCode SetupLibceedByDegree(DM dm, Ceed ceed, CeedInt degree,
   CeedBasisGetNumQuadraturePoints(basis_u, &num_qpts);
 
   // CEED restrictions
+  ierr = DMLocalizeCoordinates(dm);CHKERRQ(ierr); /* needed for periodic */
   ierr = DMGetCoordinateDM(dm, &dm_coord); CHKERRQ(ierr);
   ierr = DMPlexSetClosurePermutationTensor(dm_coord, PETSC_DETERMINE, NULL);
   CHKERRQ(ierr);
