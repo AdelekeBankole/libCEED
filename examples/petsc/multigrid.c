@@ -38,6 +38,14 @@
 /// CEED BPs 1-6 multigrid example using PETSc
 const char help[] = "Solve CEED BPs using p-multigrid with PETSc and DMPlex\n";
 
+/* NEW CODE FOR TESTING CONVERGENCE */
+typedef enum {
+  SMOOTHING_IDENTITY,
+  SMOOTHING_JACOBI,
+  SMOOTHING_CHEBYSHEV,
+} Smoothing;
+/* NEW CODE FOR TESTING CONVERGENCE */
+
 #include <stdbool.h>
 #include <string.h>
 #include <ceed.h>
@@ -204,6 +212,7 @@ int main(int argc, char **argv) {
     num_levels = ceil(log(degree)/log(2)) + 1;
     break;
   }
+num_levels = 2;
   ierr = PetscMalloc1(num_levels, &level_degrees); CHKERRQ(ierr);
   fine_level = num_levels - 1;
 
@@ -216,6 +225,8 @@ int main(int argc, char **argv) {
     level_degrees[fine_level] = degree;
     break;
   }
+  level_degrees[1] = degree;
+  level_degrees[0] = 2;
   ierr = PetscMalloc1(num_levels, &dm); CHKERRQ(ierr);
   ierr = PetscMalloc1(num_levels, &X); CHKERRQ(ierr);
   ierr = PetscMalloc1(num_levels, &X_loc); CHKERRQ(ierr);
@@ -451,8 +462,10 @@ int main(int argc, char **argv) {
   // Set up KSP
   ierr = KSPCreate(comm, &ksp); CHKERRQ(ierr);
   {
-    ierr = KSPSetType(ksp, KSPCG); CHKERRQ(ierr);
-    ierr = KSPSetNormType(ksp, KSP_NORM_NATURAL); CHKERRQ(ierr);
+    /* NEW CODE FOR TESTING CONVERGENCE */
+    ierr = KSPSetType(ksp, KSPRICHARDSON); CHKERRQ(ierr);
+    //ierr = KSPSetNormType(ksp, KSP_NORM_NATURAL); CHKERRQ(ierr);
+    /* NEW CODE FOR TESTING CONVERGENCE */
     ierr = KSPSetTolerances(ksp, 1e-10, PETSC_DEFAULT, PETSC_DEFAULT,
                             PETSC_DEFAULT); CHKERRQ(ierr);
   }
@@ -463,6 +476,9 @@ int main(int argc, char **argv) {
   // Set up PCMG
   ierr = KSPGetPC(ksp, &pc); CHKERRQ(ierr);
   PCMGCycleType pcmg_cycle_type = PC_MG_CYCLE_V;
+  /* NEW CODE FOR TESTING CONVERGENCE */
+  Smoothing smoothing = SMOOTHING_JACOBI;
+  /* NEW CODE FOR TESTING CONVERGENCE */
   {
     ierr = PCSetType(pc, PCMG); CHKERRQ(ierr);
 
@@ -472,14 +488,31 @@ int main(int argc, char **argv) {
       // Smoother
       KSP smoother;
       PC smoother_pc;
+      /* NEW CODE FOR TESTING CONVERGENCE */
       ierr = PCMGGetSmoother(pc, i, &smoother); CHKERRQ(ierr);
-      ierr = KSPSetType(smoother, KSPCHEBYSHEV); CHKERRQ(ierr);
-      ierr = KSPChebyshevEstEigSet(smoother, 0, 0.1, 0, 1.1); CHKERRQ(ierr);
-      ierr = KSPChebyshevEstEigSetUseNoisy(smoother, PETSC_TRUE); CHKERRQ(ierr);
+      ierr = KSPSetNormType(smoother, KSP_NORM_NONE); CHKERRQ(ierr);
       ierr = KSPSetOperators(smoother, mat_O[i], mat_O[i]); CHKERRQ(ierr);
       ierr = KSPGetPC(smoother, &smoother_pc); CHKERRQ(ierr);
-      ierr = PCSetType(smoother_pc, PCJACOBI); CHKERRQ(ierr);
-      ierr = PCJacobiSetType(smoother_pc, PC_JACOBI_DIAGONAL); CHKERRQ(ierr);
+      switch (smoothing) {
+      case SMOOTHING_IDENTITY:
+        ierr = KSPSetType(smoother, KSPRICHARDSON); CHKERRQ(ierr);
+        ierr = PCSetType(smoother_pc, PCNONE); CHKERRQ(ierr);
+        break;
+      case SMOOTHING_JACOBI:
+        ierr = KSPSetType(smoother, KSPRICHARDSON); CHKERRQ(ierr);
+        ierr = PCSetType(smoother_pc, PCJACOBI); CHKERRQ(ierr);
+        ierr = PCJacobiSetType(smoother_pc, PC_JACOBI_DIAGONAL); CHKERRQ(ierr);
+        break;
+      case SMOOTHING_CHEBYSHEV:
+        ierr = KSPSetType(smoother, KSPCHEBYSHEV); CHKERRQ(ierr);
+        ierr = KSPChebyshevEstEigSet(smoother, 0, 0.1, 0, 1.1); CHKERRQ(ierr);
+        ierr = KSPChebyshevEstEigSetUseNoisy(smoother, PETSC_TRUE); CHKERRQ(ierr);
+        //ierr = KSPChebyshevSetEigenvalues(smoother, 1.9893, 0.19893); CHKERRQ(ierr);
+        ierr = PCSetType(smoother_pc, PCJACOBI); CHKERRQ(ierr);
+        ierr = PCJacobiSetType(smoother_pc, PC_JACOBI_DIAGONAL); CHKERRQ(ierr);
+        break;
+      }
+      /* NEW CODE FOR TESTING CONVERGENCE */
 
       // Work vector
       if (i < num_levels - 1) {
@@ -510,7 +543,13 @@ int main(int argc, char **argv) {
 
     // PCMG options
     ierr = PCMGSetType(pc, PC_MG_MULTIPLICATIVE); CHKERRQ(ierr);
-    ierr = PCMGSetNumberSmooth(pc, 3); CHKERRQ(ierr);
+    /* NEW CODE FOR TESTING CONVERGENCE */
+    if (smoothing == SMOOTHING_IDENTITY) {
+      ierr = PCMGSetNumberSmooth(pc, 0); CHKERRQ(ierr);
+    } else {
+      ierr = PCMGSetNumberSmooth(pc, 1); CHKERRQ(ierr);
+    }
+    /* NEW CODE FOR TESTING CONVERGENCE */
     ierr = PCMGSetCycleType(pc, pcmg_cycle_type); CHKERRQ(ierr);
   }
 
