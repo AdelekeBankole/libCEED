@@ -212,7 +212,7 @@ int main(int argc, char **argv) {
     num_levels = ceil(log(degree)/log(2)) + 1;
     break;
   }
-num_levels = 2;
+  num_levels = 2;
   ierr = PetscMalloc1(num_levels, &level_degrees); CHKERRQ(ierr);
   fine_level = num_levels - 1;
 
@@ -585,7 +585,6 @@ num_levels = 2;
   my_rt_start = MPI_Wtime();
   ierr = KSPSolve(ksp, rhs, X[fine_level]); CHKERRQ(ierr);
   my_rt = MPI_Wtime() - my_rt_start;
-
 
   // -- Performance logging
   ierr = PetscLogStagePop();
