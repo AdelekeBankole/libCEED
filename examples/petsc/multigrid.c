@@ -44,6 +44,10 @@ typedef enum {
   SMOOTHING_JACOBI,
   SMOOTHING_CHEBYSHEV,
 } Smoothing;
+
+static const char *const smoothing_types[] = {"identity", "jacobi", "chebyshev",
+                                              "Smoothing", "SMOOTHING", 0
+                                             };
 /* NEW CODE FOR TESTING CONVERGENCE */
 
 #include <stdbool.h>
@@ -76,8 +80,10 @@ int main(int argc, char **argv) {
   char filename[PETSC_MAX_PATH_LEN],
        ceed_resource[PETSC_MAX_PATH_LEN] = "/cpu/self";
   double my_rt_start, my_rt, rt_min, rt_max;
-  PetscInt degree = 3, q_extra, *l_size, *xl_size, *g_size, dim = 3, fine_level,
-           mesh_elem[3] = {3, 3, 3}, num_comp_u = 1, num_levels = degree, *level_degrees;
+  PetscInt degree = 3, coarse_degree, num_smooths, q_extra, *l_size, *xl_size,
+           *g_size,
+           dim = 3, fine_level, mesh_elem[3] = {3, 3, 3}, num_comp_u = 1,
+               num_levels = 2, *level_degrees;
   PetscScalar *r;
   PetscScalar eps = 1.0;
   PetscBool test_mode, benchmark_mode, read_mesh, write_solution;
@@ -97,7 +103,8 @@ int main(int argc, char **argv) {
   CeedQFunction qf_error, qf_restrict, qf_prolong;
   CeedOperator op_error;
   BPType bp_choice;
-  CoarsenType coarsen;
+  //CoarsenType coarsen;
+  Smoothing smoothing;
 
   ierr = PetscInitialize(&argc, &argv, NULL, help);
   if (ierr) return ierr;
@@ -141,11 +148,13 @@ int main(int argc, char **argv) {
   ierr = PetscOptionsString("-ceed", "CEED resource specifier",
                             NULL, ceed_resource, ceed_resource,
                             sizeof(ceed_resource), NULL); CHKERRQ(ierr);
+  /*
   coarsen = COARSEN_UNIFORM;
   ierr = PetscOptionsEnum("-coarsen",
                           "Coarsening strategy to use", NULL,
                           coarsen_types, (PetscEnum)coarsen,
                           (PetscEnum *)&coarsen, NULL); CHKERRQ(ierr);
+  */
   read_mesh = PETSC_FALSE;
   ierr = PetscOptionsString("-mesh", "Read mesh from file", NULL,
                             filename, filename, sizeof(filename), &read_mesh);
@@ -155,6 +164,24 @@ int main(int argc, char **argv) {
     ierr = PetscOptionsIntArray("-cells","Number of cells per dimension", NULL,
                                 mesh_elem, &tmp, NULL); CHKERRQ(ierr);
   }
+  /* NEW CODE FOR TESTING CONVERGENCE */
+  smoothing = SMOOTHING_JACOBI;
+  ierr = PetscOptionsEnum("-smoothing",
+                          "smoothing method to use", NULL,
+                          smoothing_types, (PetscEnum)smoothing, (PetscEnum *)&smoothing,
+                          NULL); CHKERRQ(ierr);
+  coarse_degree = 1;
+  ierr = PetscOptionsInt("-coarse_degree",
+                         "Polynomial degree of coarse grid tensor product basis",
+                         NULL, coarse_degree, &coarse_degree, NULL); CHKERRQ(ierr);
+  if (coarse_degree < 1) SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_ARG_OUTOFRANGE,
+                                    "-coarse_degree %D must be at least 1", coarse_degree);
+  num_smooths = 1;
+  ierr = PetscOptionsInt("-num_smooths", "Number of smoothing passes",
+                         NULL, num_smooths, &num_smooths, NULL); CHKERRQ(ierr);
+  if (num_smooths < 0) SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_ARG_OUTOFRANGE,
+                                  "-num_smooths %D must be at least 0", num_smooths);
+  /* NEW CODE FOR TESTING CONVERGENCE */
   ierr = PetscOptionsEnd(); CHKERRQ(ierr);
 
   // Set up libCEED
@@ -204,6 +231,7 @@ int main(int argc, char **argv) {
   ierr = DMSetFromOptions(dm_orig); CHKERRQ(ierr);
 
   // Allocate arrays for PETSc objects for each level
+  /*
   switch (coarsen) {
   case COARSEN_UNIFORM:
     num_levels = degree;
@@ -212,10 +240,10 @@ int main(int argc, char **argv) {
     num_levels = ceil(log(degree)/log(2)) + 1;
     break;
   }
-  num_levels = 2;
+  */
   ierr = PetscMalloc1(num_levels, &level_degrees); CHKERRQ(ierr);
   fine_level = num_levels - 1;
-
+  /*
   switch (coarsen) {
   case COARSEN_UNIFORM:
     for (int i=0; i<num_levels; i++) level_degrees[i] = i + 1;
@@ -225,8 +253,9 @@ int main(int argc, char **argv) {
     level_degrees[fine_level] = degree;
     break;
   }
+  */
   level_degrees[1] = degree;
-  level_degrees[0] = 2;
+  level_degrees[0] = coarse_degree;
   ierr = PetscMalloc1(num_levels, &dm); CHKERRQ(ierr);
   ierr = PetscMalloc1(num_levels, &X); CHKERRQ(ierr);
   ierr = PetscMalloc1(num_levels, &X_loc); CHKERRQ(ierr);
@@ -476,9 +505,6 @@ int main(int argc, char **argv) {
   // Set up PCMG
   ierr = KSPGetPC(ksp, &pc); CHKERRQ(ierr);
   PCMGCycleType pcmg_cycle_type = PC_MG_CYCLE_V;
-  /* NEW CODE FOR TESTING CONVERGENCE */
-  Smoothing smoothing = SMOOTHING_JACOBI;
-  /* NEW CODE FOR TESTING CONVERGENCE */
   {
     ierr = PCSetType(pc, PCMG); CHKERRQ(ierr);
 
@@ -507,7 +533,7 @@ int main(int argc, char **argv) {
         ierr = KSPSetType(smoother, KSPCHEBYSHEV); CHKERRQ(ierr);
         ierr = KSPChebyshevEstEigSet(smoother, 0, 0.1, 0, 1.1); CHKERRQ(ierr);
         ierr = KSPChebyshevEstEigSetUseNoisy(smoother, PETSC_TRUE); CHKERRQ(ierr);
-        //ierr = KSPChebyshevSetEigenvalues(smoother, 1.9893, 0.19893); CHKERRQ(ierr);
+        ierr = KSPChebyshevSetEigenvalues(smoother, 1.333, 0.1333); CHKERRQ(ierr);
         ierr = PCSetType(smoother_pc, PCJACOBI); CHKERRQ(ierr);
         ierr = PCJacobiSetType(smoother_pc, PC_JACOBI_DIAGONAL); CHKERRQ(ierr);
         break;
@@ -529,11 +555,17 @@ int main(int argc, char **argv) {
       KSP coarse;
       PC coarse_pc;
       ierr = PCMGGetCoarseSolve(pc, &coarse); CHKERRQ(ierr);
-      ierr = KSPSetType(coarse, KSPPREONLY); CHKERRQ(ierr);
+      ierr = KSPSetType(coarse, KSPCG); CHKERRQ(ierr);
+      ierr = KSPSetInitialGuessNonzero(coarse, PETSC_TRUE); CHKERRQ(ierr);
       ierr = KSPSetOperators(coarse, mat_coarse, mat_coarse); CHKERRQ(ierr);
+      ierr = KSPSetNormType(coarse, KSP_NORM_NATURAL); CHKERRQ(ierr);
+      ierr = KSPSetTolerances(coarse, 1e-14, PETSC_DEFAULT, PETSC_DEFAULT,
+                              PETSC_DEFAULT);
+      CHKERRQ(ierr);
 
       ierr = KSPGetPC(coarse, &coarse_pc); CHKERRQ(ierr);
-      ierr = PCSetType(coarse_pc, PCGAMG); CHKERRQ(ierr);
+      ierr = PCSetType(coarse_pc, PCJACOBI); CHKERRQ(ierr);
+      ierr = PCJacobiSetType(coarse_pc, PC_JACOBI_DIAGONAL); CHKERRQ(ierr);
 
       ierr = KSPSetOptionsPrefix(coarse, "coarse_"); CHKERRQ(ierr);
       ierr = PCSetOptionsPrefix(coarse_pc, "coarse_"); CHKERRQ(ierr);
@@ -547,7 +579,7 @@ int main(int argc, char **argv) {
     if (smoothing == SMOOTHING_IDENTITY) {
       ierr = PCMGSetNumberSmooth(pc, 0); CHKERRQ(ierr);
     } else {
-      ierr = PCMGSetNumberSmooth(pc, 1); CHKERRQ(ierr);
+      ierr = PCMGSetNumberSmooth(pc, num_smooths); CHKERRQ(ierr);
     }
     /* NEW CODE FOR TESTING CONVERGENCE */
     ierr = PCMGSetCycleType(pc, pcmg_cycle_type); CHKERRQ(ierr);

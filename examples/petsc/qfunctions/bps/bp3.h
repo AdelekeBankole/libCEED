@@ -103,15 +103,20 @@ CEED_QFUNCTION(SetupDiffRhs)(void *ctx, CeedInt Q,
   // Quadrature Point Loop
   CeedPragmaSIMD
   for (CeedInt i=0; i<Q; i++) {
-    const CeedScalar c[3] = { 0, 1., 2. };
-    const CeedScalar k[3] = { 1., 2., 3. };
+    const CeedScalar c[3] = { 0., 1.23, 2.34 };
+    const CeedScalar k[3] = { 1., 0.5, 0.25 };
 
     true_soln[i] = sin(M_PI*(c[0] + k[0]*x[i+Q*0])) *
                    sin(M_PI*(c[1] + k[1]*x[i+Q*1])) *
-                   sin(M_PI*(c[2] + k[2]*x[i+Q*2]));
+                   sin(M_PI*(c[2] + k[2]*x[i+Q*2])) *
+                   x[i+Q*0] * x[i+Q*1] * x[i+Q*2];
 
-    rhs[i] = w[i+Q*6] * M_PI*M_PI * (k[0]*k[0] + k[1]*k[1] + k[2]*k[2]) *
-             true_soln[i];
+    rhs[i] = w[i+Q*6] * (
+               M_PI*M_PI * (k[0]*k[0] + k[1]*k[1] + k[2]*k[2]) * true_soln[i] -
+               2 * M_PI * (k[0] * cos(M_PI*(c[0] + k[0]*x[i+Q*0])) * sin(M_PI*(c[1] + k[1]*x[i+Q*1])) * sin(M_PI*(c[2] + k[2]*x[i+Q*2])) * x[i+Q*1] * x[i+Q*2] +
+                           k[1] * sin(M_PI*(c[0] + k[0]*x[i+Q*0])) * cos(M_PI*(c[1] + k[1]*x[i+Q*1])) * sin(M_PI*(c[2] + k[2]*x[i+Q*2])) * x[i+Q*0] * x[i+Q*2] +
+                           k[2] * cos(M_PI*(c[0] + k[0]*x[i+Q*0])) * sin(M_PI*(c[1] + k[1]*x[i+Q*1])) * cos(M_PI*(c[2] + k[2]*x[i+Q*2])) * x[i+Q*0] * x[i+Q*1]));
+
   } // End of Quadrature Point Loop
 
   return 0;
