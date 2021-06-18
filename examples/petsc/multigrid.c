@@ -165,7 +165,7 @@ int main(int argc, char **argv) {
                                 mesh_elem, &tmp, NULL); CHKERRQ(ierr);
   }
   /* NEW CODE FOR TESTING CONVERGENCE */
-  smoothing = SMOOTHING_JACOBI;
+  smoothing = SMOOTHING_CHEBYSHEV;
   ierr = PetscOptionsEnum("-smoothing",
                           "smoothing method to use", NULL,
                           smoothing_types, (PetscEnum)smoothing, (PetscEnum *)&smoothing,
@@ -531,9 +531,21 @@ int main(int argc, char **argv) {
         break;
       case SMOOTHING_CHEBYSHEV:
         ierr = KSPSetType(smoother, KSPCHEBYSHEV); CHKERRQ(ierr);
+        /*
         ierr = KSPChebyshevEstEigSet(smoother, 0, 0.1, 0, 1.1); CHKERRQ(ierr);
         ierr = KSPChebyshevEstEigSetUseNoisy(smoother, PETSC_TRUE); CHKERRQ(ierr);
-        ierr = KSPChebyshevSetEigenvalues(smoother, 1.333, 0.1333); CHKERRQ(ierr);
+        */
+        PetscScalar eigenvalue_estimate = 0.0;
+        switch (degree) {
+        case 2: eigenvalue_estimate = 1.3330; break;
+        case 3: eigenvalue_estimate = 1.9893; break;
+        case 4: eigenvalue_estimate = 1.6202; break;
+        case 5: eigenvalue_estimate = 2.2932; break;
+        case 6: eigenvalue_estimate = 1.8643; break;
+        }
+        ierr = KSPChebyshevSetEigenvalues(smoother, eigenvalue_estimate,
+                                          eigenvalue_estimate/10.);
+        CHKERRQ(ierr);
         ierr = PCSetType(smoother_pc, PCJACOBI); CHKERRQ(ierr);
         ierr = PCJacobiSetType(smoother_pc, PC_JACOBI_DIAGONAL); CHKERRQ(ierr);
         break;
