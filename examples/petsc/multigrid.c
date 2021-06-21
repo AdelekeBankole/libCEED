@@ -537,11 +537,11 @@ int main(int argc, char **argv) {
         */
         PetscScalar eigenvalue_estimate = 0.0;
         switch (degree) {
-        case 2: eigenvalue_estimate = 1.3330; break;
+        case 2: eigenvalue_estimate = 1.3393; break;
         case 3: eigenvalue_estimate = 1.9893; break;
-        case 4: eigenvalue_estimate = 1.6202; break;
+        case 4: eigenvalue_estimate = 2.1993; break;
         case 5: eigenvalue_estimate = 2.2932; break;
-        case 6: eigenvalue_estimate = 1.8643; break;
+        case 6: eigenvalue_estimate = 2.3463; break;
         }
         ierr = KSPChebyshevSetEigenvalues(smoother, eigenvalue_estimate,
                                           eigenvalue_estimate/10.);
