@@ -236,7 +236,7 @@ int main(int argc, char **argv) {
     ierr = DMSetVecType(dm[i], vec_type); CHKERRQ(ierr);
     PetscInt dim;
     ierr = DMGetDimension(dm[i], &dim); CHKERRQ(ierr);
-    ierr = SetupDMByDegree(dm[i], level_degrees[i], num_comp_u, dim,
+    ierr = SetupDMByDegree(dm[i], level_degrees[i], num_comp_u, dim, true,
                            bp_options[bp_choice].enforce_bc, bp_options[bp_choice].bc_func);
     CHKERRQ(ierr);
 
@@ -378,9 +378,9 @@ int main(int argc, char **argv) {
     // Multiplicity
     CeedElemRestrictionGetMultiplicity(ceed_data[i]->elem_restr_u,
                                        ceed_data[i]->x_ceed);
-    CeedVectorSyncArray(ceed_data[i]->x_ceed, CEED_MEM_HOST);
 
     // Restore vector
+    CeedVectorTakeArray(ceed_data[i]->x_ceed, CEED_MEM_HOST, &x);
     ierr = VecRestoreArray(X_loc[i], &x); CHKERRQ(ierr);
 
     // Creat mult vector

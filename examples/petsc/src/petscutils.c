@@ -106,8 +106,9 @@ PetscErrorCode Kershaw(DM dm_orig, PetscScalar eps) {
 // PETSc FE Boilerplate
 // -----------------------------------------------------------------------------
 PetscErrorCode PetscFECreateByDegree(DM dm, PetscInt dim, PetscInt Nc,
-                                     PetscBool isSimplex, const char prefix[],
-                                     PetscInt order, PetscFE *fem) {
+                                     PetscBool isSimplex, PetscBool isContinuous,
+                                     const char prefix[], PetscInt order,
+                                     PetscFE *fem) {
   PetscQuadrature q, fq;
   DM              K;
   PetscSpace      P;
@@ -130,13 +131,14 @@ PetscErrorCode PetscFECreateByDegree(DM dm, PetscInt dim, PetscInt Nc,
   /* Create dual space */
   ierr = PetscDualSpaceCreate(PetscObjectComm((PetscObject) dm), &Q);
   CHKERRQ(ierr);
-  ierr = PetscDualSpaceSetType(Q,PETSCDUALSPACELAGRANGE); CHKERRQ(ierr);
+  ierr = PetscDualSpaceSetType(Q, PETSCDUALSPACELAGRANGE); CHKERRQ(ierr);
   ierr = PetscObjectSetOptionsPrefix((PetscObject) Q, prefix); CHKERRQ(ierr);
   ierr = PetscDualSpaceCreateReferenceCell(Q, dim, isSimplex, &K); CHKERRQ(ierr);
   ierr = PetscDualSpaceSetDM(Q, K); CHKERRQ(ierr);
   ierr = DMDestroy(&K); CHKERRQ(ierr);
   ierr = PetscDualSpaceSetNumComponents(Q, Nc); CHKERRQ(ierr);
   ierr = PetscDualSpaceSetOrder(Q, order); CHKERRQ(ierr);
+  //ierr = PetscDualSpaceLagrangeSetContinuity(Q, isContinuous); CHKERRQ(ierr);
   ierr = PetscDualSpaceLagrangeSetTensor(Q, tensor); CHKERRQ(ierr);
   ierr = PetscDualSpaceSetFromOptions(Q); CHKERRQ(ierr);
   ierr = PetscDualSpaceSetUp(Q); CHKERRQ(ierr);
@@ -153,12 +155,12 @@ PetscErrorCode PetscFECreateByDegree(DM dm, PetscInt dim, PetscInt Nc,
   /* Create quadrature */
   quadPointsPerEdge = PetscMax(order + 1,1);
   if (isSimplex) {
-    ierr = PetscDTStroudConicalQuadrature(dim,   1, quadPointsPerEdge, -1.0, 1.0,
+    ierr = PetscDTStroudConicalQuadrature(dim, 1, quadPointsPerEdge, -1.0, 1.0,
                                           &q); CHKERRQ(ierr);
     ierr = PetscDTStroudConicalQuadrature(dim-1, 1, quadPointsPerEdge, -1.0, 1.0,
                                           &fq); CHKERRQ(ierr);
   } else {
-    ierr = PetscDTGaussTensorQuadrature(dim,   1, quadPointsPerEdge, -1.0, 1.0,
+    ierr = PetscDTGaussTensorQuadrature(dim, 1, quadPointsPerEdge, -1.0, 1.0,
                                         &q); CHKERRQ(ierr);
     ierr = PetscDTGaussTensorQuadrature(dim-1, 1, quadPointsPerEdge, -1.0, 1.0,
                                         &fq); CHKERRQ(ierr);
@@ -192,15 +194,16 @@ static PetscErrorCode CreateBCLabel(DM dm, const char name[]) {
 // This function sets up a DM for a given degree
 // -----------------------------------------------------------------------------
 PetscErrorCode SetupDMByDegree(DM dm, PetscInt degree, PetscInt num_comp_u,
-                               PetscInt dim, bool enforce_bc, BCFunction bc_func) {
+                               PetscInt dim, PetscBool is_continuous,
+                               PetscBool enforce_bc, BCFunction bc_func) {
   PetscInt ierr, marker_ids[1] = {1};
   PetscFE fe;
 
   PetscFunctionBeginUser;
 
   // Setup FE
-  ierr = PetscFECreateByDegree(dm, dim, num_comp_u, PETSC_FALSE, NULL, degree,
-                               &fe);
+  ierr = PetscFECreateByDegree(dm, dim, num_comp_u, PETSC_FALSE, is_continuous,
+                               NULL, degree, &fe);
   CHKERRQ(ierr);
   ierr = DMSetFromOptions(dm); CHKERRQ(ierr);
   ierr = DMAddField(dm, NULL, (PetscObject)fe); CHKERRQ(ierr);
@@ -222,6 +225,22 @@ PetscErrorCode SetupDMByDegree(DM dm, PetscInt degree, PetscInt num_comp_u,
   CHKERRQ(ierr);
   ierr = PetscFEDestroy(&fe); CHKERRQ(ierr);
 
+  PetscFunctionReturn(0);
+};
+
+// -----------------------------------------------------------------------------
+// This function sets up a BDDC vertex only DM from an existing fine DM
+// -----------------------------------------------------------------------------
+PetscErrorCode SetupVertexDMFromDM(DM dm, DM dm_vertex, PetscInt num_comp_u,
+                                   PetscBool is_continuous,
+                                   PetscBool enforce_bc, BCFunction bc_func) {
+  PetscInt ierr, dim;
+
+  PetscFunctionBeginUser;
+  ierr = DMGetDimension(dm, &dim); CHKERRQ(ierr);
+  ierr = SetupDMByDegree(dm_vertex, 1, num_comp_u, dim, is_continuous,
+                         enforce_bc, bc_func);
+  CHKERRQ(ierr);
   PetscFunctionReturn(0);
 };
 

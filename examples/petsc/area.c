@@ -162,8 +162,8 @@ int main(int argc, char **argv) {
   }
 
   // Create DM
-  ierr = SetupDMByDegree(dm, degree, num_comp_u, topo_dim, false,
-                         (BCFunction)NULL);
+  ierr = SetupDMByDegree(dm, degree, num_comp_u, topo_dim, true,
+                         false, (BCFunction)NULL);
   CHKERRQ(ierr);
 
   // Create vectors
