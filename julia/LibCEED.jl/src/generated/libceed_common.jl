@@ -1,14 +1,14 @@
 # Automatically generated using Clang.jl
 #! format: off
 
-const FILE = Cvoid
 
 # Skipping MacroDefinition: CEED_QFUNCTION ( name ) static const char name ## _loc [ ] = __FILE__ ":" # name ; static int name
+# Skipping MacroDefinition: CEED_QFUNCTION_HELPER static inline
 
 # Skipping MacroDefinition: CeedError ( ceed , ecode , ... ) ( CeedErrorImpl ( ( ceed ) , __FILE__ , __LINE__ , __func__ , ( ecode ) , __VA_ARGS__ ) ? : ( ecode ) )
 
 const CEED_VERSION_MAJOR = 0
-const CEED_VERSION_MINOR = 8
+const CEED_VERSION_MINOR = 9
 const CEED_VERSION_PATCH = 0
 const CEED_VERSION_RELEASE = false
 
@@ -99,10 +99,14 @@ const CeedQFunctionUser = Ptr{Cvoid}
 # Skipping MacroDefinition: CEED_UNUSED __attribute__ ( ( unused ) )
 
 const CEED_MAX_RESOURCE_LEN = 1024
-const CEED_MAX_BACKEND_PRIORITY = typemax(Cuint)
+const CEED_MAX_BACKEND_PRIORITY = UINT_MAX
 const CEED_ALIGN = 64
 const CEED_COMPOSITE_MAX = 16
 const CEED_EPSILON = 1.0e-16
+
+# Skipping MacroDefinition: CeedPragmaOptimizeOff _Pragma ( "clang optimize off" )
+# Skipping MacroDefinition: CeedPragmaOptimizeOn _Pragma ( "clang optimize on" )
+
 const CEED_DEBUG_COLOR = 0
 
 # Skipping MacroDefinition: CeedDebug1 ( ceed , format , ... ) CeedDebugImpl ( ceed , format , ## __VA_ARGS__ )

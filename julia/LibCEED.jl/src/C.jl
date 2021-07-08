@@ -4,6 +4,10 @@ module C
 
 using CEnum, Libdl, libCEED_jll
 
+const va_list = Cvoid
+const FILE = Cvoid
+const UINT_MAX = typemax(Cuint)
+
 include(joinpath(@__DIR__, "generated", "libceed_common.jl"))
 include(joinpath(@__DIR__, "generated", "libceed_api.jl"))
 

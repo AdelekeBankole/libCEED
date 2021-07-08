@@ -31,19 +31,19 @@ function CeedDestroy(ceed)
 end
 
 function CeedErrorReturn(arg1, arg2, arg3, arg4, arg5, arg6, arg7)
-    ccall((:CeedErrorReturn, libceed), Cint, (Ceed, Cstring, Cint, Cstring, Cint, Cstring, Ptr{Cvoid}), arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+    ccall((:CeedErrorReturn, libceed), Cint, (Ceed, Cstring, Cint, Cstring, Cint, Cstring, Ptr{va_list}), arg1, arg2, arg3, arg4, arg5, arg6, arg7)
 end
 
 function CeedErrorStore(arg1, arg2, arg3, arg4, arg5, arg6, arg7)
-    ccall((:CeedErrorStore, libceed), Cint, (Ceed, Cstring, Cint, Cstring, Cint, Cstring, Ptr{Cvoid}), arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+    ccall((:CeedErrorStore, libceed), Cint, (Ceed, Cstring, Cint, Cstring, Cint, Cstring, Ptr{va_list}), arg1, arg2, arg3, arg4, arg5, arg6, arg7)
 end
 
 function CeedErrorAbort(arg1, arg2, arg3, arg4, arg5, arg6, arg7)
-    ccall((:CeedErrorAbort, libceed), Cint, (Ceed, Cstring, Cint, Cstring, Cint, Cstring, Ptr{Cvoid}), arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+    ccall((:CeedErrorAbort, libceed), Cint, (Ceed, Cstring, Cint, Cstring, Cint, Cstring, Ptr{va_list}), arg1, arg2, arg3, arg4, arg5, arg6, arg7)
 end
 
 function CeedErrorExit(arg1, arg2, arg3, arg4, arg5, arg6, arg7)
-    ccall((:CeedErrorExit, libceed), Cint, (Ceed, Cstring, Cint, Cstring, Cint, Cstring, Ptr{Cvoid}), arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+    ccall((:CeedErrorExit, libceed), Cint, (Ceed, Cstring, Cint, Cstring, Cint, Cstring, Ptr{va_list}), arg1, arg2, arg3, arg4, arg5, arg6, arg7)
 end
 
 function CeedSetErrorHandler(ceed, eh)
@@ -364,6 +364,10 @@ end
 
 function CeedQFunctionContextSetData(ctx, mem_type, copy_mode, size, data)
     ccall((:CeedQFunctionContextSetData, libceed), Cint, (CeedQFunctionContext, CeedMemType, CeedCopyMode, Csize_t, Ptr{Cvoid}), ctx, mem_type, copy_mode, size, data)
+end
+
+function CeedQFunctionContextTakeData(ctx, mem_type, data)
+    ccall((:CeedQFunctionContextTakeData, libceed), Cint, (CeedQFunctionContext, CeedMemType, Ptr{Cvoid}), ctx, mem_type, data)
 end
 
 function CeedQFunctionContextGetData(ctx, mem_type, data)
