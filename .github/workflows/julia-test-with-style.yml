@@ -23,8 +23,11 @@ jobs:
         run: |
           make info
           make -j2
-          export JULIA_LIBCEED_LIB=$(find $PWD/lib -name "libceed.*")
+          mkdir -p ~/.julia/artifacts
+          echo "[762fde13-7596-547b-826d-8223c52d51c1]" >> ~/.julia/artifacts/Overrides.toml
+          echo "libCEED = \"$PWD\"" >> ~/.julia/artifacts/Overrides.toml
           pushd julia/LibCEED.jl
-          julia --project -e 'import Pkg; Pkg.build(); Pkg.test("LibCEED"; coverage=true, test_args=["--run-dev-tests"])'
-          unset JULIA_LIBCEED_LIB && julia --project -e 'import Pkg; Pkg.build(); Pkg.test("LibCEED")'
+          julia --project -e 'import Pkg; Pkg.test("LibCEED"; coverage=true, test_args=["--run-dev-tests"])'
+          rm ~/.julia/artifacts/Overrides.toml
+          julia --project -e 'import Pkg; Pkg.test("LibCEED")'
           julia --project=.style/ -e 'import Pkg; Pkg.instantiate()' && julia --project=.style/ .style/ceed_style.jl && git diff --exit-code src test examples

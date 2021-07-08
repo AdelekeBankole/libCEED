@@ -30,23 +30,26 @@ as described in the [Configuring LibCEED.jl](@ref) section.
 
 By default, LibCEED.jl will use the pre-built libCEED binaries provided by the
 [libCEED_jll](https://juliahub.com/ui/Packages/libCEED_jll/LB2fn) package. If
-you wish to use a different libCEED binary (e.g. one built from source),
-LibCEED.jl can be configured using the `JULIA_LIBCEED_LIB` environment variable
-set to the absolute path of the libCEED dynamic library. For the configuration
-to take effect, LibCEED.jl must be **built** with this environment variable, for
-example:
+you wish to use a different libCEED binary (e.g. one built from source), this
+can be achieved using `Overrides.toml`. Edit (or create, if it does not exist)
+the file `~/.julia/artifacts/Overrides.toml`, and add the following section:
 
-```julia
-% JULIA_LIBCEED_LIB=/path/to/libceed.so julia
-julia> # press ] to enter package manager
-(env) pkg> build LibCEED
+```toml
+[762fde13-7596-547b-826d-8223c52d51c1]
+libCEED = "/absolute/path/to/libCEED"
 ```
-or, equivalently,
-```julia
-julia> withenv("JULIA_LIBCEED_LIB" => "/path/to/libceed.so") do
-    Pkg.build("LibCEED")
-end
-```
+
+In the above, `762fde13-7596-547b-826d-8223c52d51c1` is the UUID of the
+libCEED_jll package (it can be copied verbatim), and `/absolute/path/to/libCEED`
+is a path to the directory enclosing the `lib` directory containing the libCEED
+dynamic library. In other words, the dynamic library `libceed.so` or
+`libceed.dylib` (depending on the platform) should be found within the directory
+`/absolute/path/to/libCEED/lib`.
+
+More information about `Overrides.toml` is available in the [Pkg
+documentation](https://pkgdocs.julialang.org/v1/artifacts/#Overriding-artifact-locations)
+and the [BinaryBuilder
+documentation](https://docs.binarybuilder.org/stable/jll/#Overriding-the-artifacts-in-JLL-packages).
 
 
 ### Features of the high-level interface for libCEED
