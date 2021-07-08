@@ -97,6 +97,28 @@ end
 
         @test CeedVectorActive()[] == LibCEED.C.CEED_VECTOR_ACTIVE[]
         @test CeedVectorNone()[] == LibCEED.C.CEED_VECTOR_NONE[]
+
+        w1 = rand(n)
+        w2 = rand(n)
+        w3 = rand(n)
+
+        cv1 = CeedVector(c, w1)
+        cv2 = CeedVector(c, w2)
+        cv3 = CeedVector(c, w3)
+
+        alpha = rand()
+
+        scale!(cv1, alpha)
+        w1 .*= alpha
+        @test @witharray_read(a = cv1, a == w1)
+
+        pointwisemult!(cv1, cv2, cv3)
+        w1 .= w2.*w3
+        @test @witharray_read(a = cv1, a == w1)
+
+        axpy!(alpha, cv2, cv1)
+        axpy!(alpha, w2, w1)
+        @test @witharray_read(a = cv1, a ≈ w1)
     end
 
     @testset "Basis" begin
