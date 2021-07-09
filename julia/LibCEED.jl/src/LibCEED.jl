@@ -148,8 +148,6 @@ include("Request.jl")
 include("Operator.jl")
 include("Misc.jl")
 
-cuda_is_loaded = false
-
 function __init__()
     @require CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba" include("Cuda.jl")
     set_globals()
