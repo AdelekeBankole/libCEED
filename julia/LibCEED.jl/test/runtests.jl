@@ -1,16 +1,7 @@
 using Test, LibCEED, LinearAlgebra, StaticArrays
 
-function iostr(f, x)
-    io = IOBuffer()
-    f(io, x)
-    String(take!(io))
-end
-function showstr(x)
-    iostr(x) do io, y
-        show(io, MIME("text/plain"), y)
-    end
-end
-summarystr(x) = iostr(summary, x)
+showstr(x) = sprint(show, MIME("text/plain"), x)
+summarystr(x) = sprint(summary, x)
 getoutput(fname) = chomp(read(joinpath(@__DIR__, "output", fname), String))
 
 mutable struct CtxData
@@ -77,7 +68,7 @@ end
         @test @witharray(a = v, all(a .== 1.0))
 
         @test summarystr(v) == "$n-element CeedVector"
-        @test iostr(show, v) == @witharray_read(a = v, iostr(show, a))
+        @test sprint(show, v) == @witharray_read(a = v, sprint(show, a))
         io = IOBuffer()
         summary(io, v)
         println(io, ":")
