@@ -88,6 +88,7 @@ export @interior_qf,
     extract_array,
     extract_context,
     gauss_quadrature,
+    get_libceed_path,
     get_preferred_memtype,
     getcompstride,
     getnumelements,
@@ -229,5 +230,13 @@ function use_prebuilt_libceed!()
           Restart the Julia session for changes to take effect.
           """)
 end
+
+"""
+    get_libceed_path()
+
+Returns the path to the currently used libCEED library. A different libCEED library can be used by
+calling [`set_libceed_path!`](@ref) or by using a depot-wide Overrides.toml file.
+"""
+get_libceed_path() = C.libCEED_jll.libceed_path
 
 end # module
